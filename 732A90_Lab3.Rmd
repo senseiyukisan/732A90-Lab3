@@ -1,0 +1,30 @@
+---
+title: "Computer Lab 3"
+author: "Tim Yuki Washio"
+date: "11/19/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+## 1.
+
+Plotting $f(x)$ with $c=2$ and $f_p(x)$ with $\alpha=2$ and $T_{min}=2$
+
+```{r plot}
+c = 2
+t_min = 2
+alpha = 2
+
+plot(1, xlim = c(0,75), ylim = c(0, 1), type = "n", xlab = "", ylab = "", main = "f(x) ~ f_p(x)")
+curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=75, add=TRUE, col="black")
+curve((eval(alpha) - 1 / eval(t_min)) * (x / eval(t_min))^(-eval(alpha)), from=0, to=75, add=TRUE, col="red")
+
+legend("topright", inset=.02, title="functions",
+       c("target","majorizing"), horiz=TRUE, cex=0.8, col = 1:2, lty = 1)
+```
+
+The power-law distribution should not be used by itself because for small values of $x$ $f_p(x) = \infty$. If we sample from our majorizing distribution in this area, we will get a huge number of rejections. It might be better to combine the power-law distribution with another distribution that majorizes our target function in that area. We could use a uniform distribution with support $(0, T_{min}$ in addition to our given distribution with support $(T_{min}, \infty)$.
