@@ -16,8 +16,8 @@ Plotting $f(x)$ with $c=2$ and $f_p(x)$ with $\alpha=2$ and $T_{min}=2$
 
 ```{r plot}
 c = 2
-t_min = 2
-alpha = 2
+t_min = 1.5
+alpha = 1.1
 
 plot(1, xlim = c(0,75), ylim = c(0, 1), type = "n", xlab = "", ylab = "", main = "f(x) ~ f_p(x)")
 curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=75, add=TRUE, col="black")
@@ -28,3 +28,14 @@ legend("topright", inset=.02, title="functions",
 ```
 
 The power-law distribution should not be used by itself because for small values of $x$ $f_p(x) = \infty$. If we sample from our majorizing distribution in this area, we will get a huge number of rejections. It might be better to combine the power-law distribution with another distribution that majorizes our target function in that area. We could use a uniform distribution with support $(0, T_{min}$ in addition to our given distribution with support $(T_{min}, \infty)$.
+
+Power-law distribution values:
+
+$$\frac{df(x)}{dx} = \frac{ce^{(-c^2)/2x} (c^2-3x)}{2\sqrt(2\pi) x^{7/2}}$$
+
+This has one root for $c \neq 0, x = \frac{c^2}{3}$.
+
+$$max(f(x)) = f(\frac{c^2}{3})$$
+$$f_{p}(x) = f(\frac{c^2}{3})$$
+
+$$x = T_{min}$$
