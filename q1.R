@@ -40,9 +40,6 @@ majorizing_fun <- function(x, alpha, t_min, support_border) {
     }
     if (y>support_border) {
       res = power_law(y, alpha, t_min)
-      if (round(res, 5) == round(x_max, 5)) {
-        cat("x: ", y, "y: ", res,"\n")
-      }
     }	
     res
   }, simplify = TRUE)
@@ -66,6 +63,9 @@ for (x in x_values) {
   }
 }
 
+# If we search for x value of majorzing function with same y value as x_max_target we get an x value of ~5. This is our
+# border until we use the Unif distribution and afterwards the power-law but if this is our border this is also
+# our T_min or not? So our initial T_min of 1.5 is not the same as the support border? Something is wrong in our logic.
 support_border = x_max_power_law
 
 vx = c(seq(0, t_min, t_min/10000), seq(t_min, 50, 50/10000))
@@ -79,14 +79,17 @@ points(vx, (majorizing_fun(vx, alpha, t_min, support_border)), pch=19, cex=0.2, 
 rmajorizing<-function(n) {
   sapply(1:n,function(i) {
     res<-NA
-    component<-sample(1:2,1,prob=c(9/10,1/10))
+    # What should the probabilities be? We need the integral of f(x) between 0 and T_min to get the probability
+    # The probability from T_min to Inf is gonna be 1-p then. (Microsoft Teams answer to that question)
+    component<-sample(1:2,1,prob=c(5/10,5/10))
     if(component==1){res<-runif(1)}
+    # Here I want to sample from our power-law function as described in number 2.
     if(component==2){res<-rplcon(1, support_border, alpha)}
     res
   })
 }
 
-Nsample<-1000000
+Nsample<-100000
 num_histbreaks<-1000
 hist(rmajorizing(Nsample),breaks=1000,col="black",xlab="",ylab="",main="majorizing density",freq=FALSE)
 
@@ -96,7 +99,7 @@ fgentruncnormal<-function(c){
   while (is.na(x)){
     y<-rmajorizing(1)
     u<-runif(1)
-    if (u<=ptruncnormal(y)/(c*pmajorizing(y))){x<-y}
+    if (u<=target_fun(y)/(c*majorizing_fun(y))){x<-y}
     else{num_reject<-num_reject+1}
   }
   c(x,num_reject)
