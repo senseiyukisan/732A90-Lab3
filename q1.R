@@ -1,32 +1,98 @@
-target_fun <- function(x) {
-  return ()
-}
-
-majorizing_fun <- function(alpha) {
-
-}
-
 #########
 ### 1 ###
 #########
 
-# we set c = ?
-#
+c = 2
+t_min = 1.5
+alpha = 1.1
+
+plot(1, xlim = c(0,75), ylim = c(0, 1), type = "n", xlab = "", ylab = "", main = "f(x) ~ f_p(x)")
+curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=75, add=TRUE, col="black")
+curve((eval(alpha) - 1 / eval(t_min)) * (x / eval(t_min))^(-eval(alpha)), from=0, to=75, add=TRUE, col="red")
+
+legend("topright", inset=.02, title="functions",
+       c("target","majorizing"), horiz=TRUE, cex=0.8, col = 1:2, lty = 1)
+
+#########
+### 2 ###
+#########
+
+target_fun <- function(x, c) {
+  res = 0
+  res = ((c * (sqrt(2 * pi)^(-1)) * exp(-c^(2) / (2 * x)) * x^(-3/2)))
+  res[x<0] = 0
+  return (res)
+}
+
+power_law <- function(x, alpha, t_min) {
+  return((alpha - 1 / t_min) * (x / t_min)^(-alpha))
+}
+
+
+majorizing_fun <- function(x, alpha, t_min) {
+  sapply(x, function(y) {
+    res = NA
+    if (y<0) {
+      res = 0
+    }
+    if ((y>=0) && (y<=support_border)) {
+      res = x_max
+    }
+    if (y>support_border) {
+      res = power_law(y, alpha, t_min)
+      if (round(res, 5) == round(x_max, 5)) {
+        cat("x: ", y, "y: ", res,"\n")
+      }
+    }	
+    res
+  }, simplify = TRUE)
+}
+
+alpha = 1.1
+c = 2
+t_min = 1.5
+
+# Find out maximum value max(f(x)) for given parameters
+x_max_target = c * (sqrt(2 * pi)^(-1)) * exp(-c^(2) / (2 * (c^2/3))) * (c^2/3)^(-3/2)
+
+# Find x value of majorizing function with same y value as x_max_target
+x_values = c(seq(0, 10, by=0.001))
+for (x in x_values) {
+  if (x>1) {
+    res = power_law(x, alpha, t_min)
+    if (round(res, 5) == round(x_max, 5)) {
+      x_max_power_law = x
+    }
+  }
+}
+
+support_border = x_max_power_law
+
+vx = c(seq(0, t_min, t_min/10000), seq(t_min, 50, 50/10000))
+plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
+points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="gray")
+
+#########
+### 3 ###
+#########
+
+fgentruncnormal<-function(c){
+  x<-NA
+  num_reject<-0
+  while (is.na(x)){
+    y<-rmajorizing(1)
+    u<-runif(1)
+    if (u<=ptruncnormal(y)/(c*pmajorizing(y))){x<-y}
+    else{num_reject<-num_reject+1}
+  }
+  c(x,num_reject)
+}
+
 c = 1
-curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=50)
+vtruncnormal_acceptreject = sapply(rep(c,Nsample),fgentruncnormal)[1,]
+vtruncnormal_direct = rnorm(2*Nsample)
+vtruncnormal_direct = vtruncnormal_direct[vtruncnormal_direct>=0]
 
-# we set t_min = ?
-# we split f_p(x) into:
-#
-# f_p1(x) with support [0,1]
-# f_p2(x) with support [1,Inf]
-#
-# f_p1(x) is going to be uniform distribution [0,1]
-# we choose our majorizing constant at biggest value of target function
-#
-# f_p2(x) is going to be power-law distribution [1, Inf]
-# we choose our
-t_min = 1
-alpha = 2
-curve((eval(alpha) - 1 / eval(t_min)) * (x / eval(t_min))^(-eval(alpha)), from=0, to=50, add=TRUE)
-
+hist(vtruncnormal_acceptreject,col="black",breaks=100,xlab="",ylab="",freq=FALSE,main="")
+hist(vtruncnormal_direct,col=gray(0.8),breaks=100,xlab="",ylab="",freq=FALSE,main="",add=TRUE)
+legend("topright",pch=19,cex=1.5,legend=c("acceptance/rejection algorithm","direct sampling"),col=c("black",gray(0.8)),bty="n")
