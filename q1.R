@@ -29,7 +29,7 @@ power_law <- function(x, alpha, t_min) {
 }
 
 
-majorizing_fun <- function(x, alpha, t_min) {
+majorizing_fun <- function(x, alpha, t_min, support_border) {
   sapply(x, function(y) {
     res = NA
     if (y<0) {
@@ -70,11 +70,25 @@ support_border = x_max_power_law
 
 vx = c(seq(0, t_min, t_min/10000), seq(t_min, 50, 50/10000))
 plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
-points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="gray")
+points(vx, (majorizing_fun(vx, alpha, t_min, support_border)), pch=19, cex=0.2, col="gray")
 
 #########
 ### 3 ###
 #########
+
+rmajorizing<-function(n) {
+  sapply(1:n,function(i) {
+    res<-NA
+    component<-sample(1:2,1,prob=c(9/10,1/10))
+    if(component==1){res<-runif(1)}
+    if(component==2){res<-rplcon(1, support_border, alpha)}
+    res
+  })
+}
+
+Nsample<-1000000
+num_histbreaks<-1000
+hist(rmajorizing(Nsample),breaks=1000,col="black",xlab="",ylab="",main="majorizing density",freq=FALSE)
 
 fgentruncnormal<-function(c){
   x<-NA
