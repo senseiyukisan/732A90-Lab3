@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 ```
 
+# Question 1: Stable Distribution 
+
 ## 1.
 
 Plotting $f(x)$ with $c=2$ and $f_p(x)$ with $\alpha=2$ and $T_{min}=2$
@@ -39,3 +41,50 @@ $$max(f(x)) = f(\frac{c^2}{3})$$
 $$f_{p}(x) = f(\frac{c^2}{3})$$
 
 $$x = T_{min}$$
+
+# Question 2: Laplace Distribution
+
+To get to the inverse CDF $F^{-1}(p)$ we first need to get the CDF $F(x)$
+
+$$F(x) = \int_{-\infty}^{x}f(u)du = \left\{
+\begin{array}{c l}	
+    \frac{1}{2} \rm e(\frac{x - \mu}{\alpha})  & \rm if \enspace  x < \mu\\
+     1-\frac{1}{2} \rm e(\frac{x - \mu}{\alpha}) & \rm if \enspace x \ge \mu
+\end{array}\right.$$
+
+After transformation, we get
+
+$$F(x) = \frac{1}{2} + \frac{1}{2}sgn(x - \mu)\left(1 - e\left(-\frac{|x-\mu|}{\alpha} \right)\right)$$
+Now we calculate the inverse CDF $F^{-1}(p)$ by using the CDF $F(x)$ TODO: Write down the way how to get there!
+
+$$F^{-1}(p) = \mu - \alpha sgn(p-0.5)ln(1-2|p-0.5|)$$
+
+```{r code}
+# Given density function
+laplace_density <- function(x, mu, alpha) {
+  result = (alpha/2)*exp(-alpha*abs(x-mu))
+  return(result)
+}
+
+# Calculated inverse CDF for Laplace function
+laplace_inv_cdf = function(p, mu, alpha){
+  result = mu-alpha*sign(p-0.5)*log(1-2*abs(p-0.5))
+  return(result)
+}
+
+# Random number generation with n=10000, mu=10, alpha=1
+n = 10000
+unif_sample = runif(n)
+sample = laplace_inv_cdf(unif_sample, 10, 1)
+sample_density = laplace_density(sample, 10, 1)
+```
+
+```{r}
+# Plotting the histogram
+hist_plot <- ggplot() +
+geom_histogram(aes(x = sample, y = ..density..), col = "green", fill="green") +
+geom_line(aes(x = sample, y = sample_density), col = "red") +
+xlab("Sample values") + ylab("Density values")
+
+hist_plot
+```
