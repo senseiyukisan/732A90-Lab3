@@ -42,22 +42,45 @@ $$f_{p}(x) = f(\frac{c^2}{3})$$
 
 $$x = T_{min}$$
 
+\newpage
+
 # Question 2: Laplace Distribution
 
-To get to the inverse CDF $F^{-1}(p)$ we first need to get the CDF $F(x)$
+## Write a code generating random numbers from the double exponential distribution
+
+The double exponential distribution is given by the followinf formula:
+
+$$ DE(\mu, \alpha) = \frac{\alpha}{2}exp(-\alpha \mid x - \mu \mid) $$
+
+To get to the inverse CDF, $F^{-1}(p)$, of this function we first need to get the CDF $F(x)$
 
 $$F(x) = \int_{-\infty}^{x}f(u)du = \left\{
 \begin{array}{c l}	
-    \frac{1}{2} \rm e(\frac{x - \mu}{\alpha})  & \rm if \enspace  x < \mu\\
-     1-\frac{1}{2} \rm e(\frac{x - \mu}{\alpha}) & \rm if \enspace x \ge \mu
+    \frac{1}{2} \rm e^{(\frac{x - \mu}{\alpha})}  & \rm if \enspace  x < \mu\\
+     1-\frac{1}{2} \rm e^{(\frac{x - \mu}{\alpha})} & \rm if \enspace x \geq \mu
 \end{array}\right.$$
 
 After transformation, we get
 
-$$F(x) = \frac{1}{2} + \frac{1}{2}sgn(x - \mu)\left(1 - e\left(-\frac{|x-\mu|}{\alpha} \right)\right)$$
-Now we calculate the inverse CDF $F^{-1}(p)$ by using the CDF $F(x)$ TODO: Write down the way how to get there!
+$$F(x) = \frac{1}{2} + \frac{1}{2}sgn(x - \mu)\left(1 - exp\left(-\frac{|x-\mu|}{\alpha} \right)\right)$$
+Now we calculate the inverse CDF $F^{-1}(p)$ by using the CDF $F(x)$. We set:
+$$ y = \frac{1}{2} + \frac{1}{2}sgn(x-\mu)\big( 1- \rm exp(- \alpha \mid x - \mu \mid) \big)  $$
 
-$$F^{-1}(p) = \mu - \alpha sgn(p-0.5)ln(1-2|p-0.5|)$$
+And we now solve for x to obtain the inverse CDF. We have two cases. When x $\geqslant$ $\mu$ where we then have: 
+
+$$ x = \mu - \frac{1}{\alpha} \rm ln(2 - 2y)$$ 
+and the case when x < $\mu$ when we have: 
+
+$$ x = \mu + \frac{1}{\alpha} \rm ln(2y)$$
+We combine both expression and express them with respect to the sign of de difference between x and $\mu$. We obtain the following:
+
+$$ F^{-1}(y)= \mu. sgn(x-\mu) \frac{1}{\alpha} ln(1+sgn(x-\mu) - sgn(x-\mu) 2y)  $$
+However, we would like an expression that does not depend on the sign of $x- \mu$. We try to find a quantity related to it but with respect to $y$. We investigate the critical value of $y$ when the sign of $x - \mu$ changes (i.e. we look for $sgn(x-\mu)\frac{1}{\alpha} ln(1+sgn(x-\mu) - sgn(x-\mu) 2y)= x- \mu$ when x is greater and smaller than $\mu$.)
+
+We find that $sgn(x-\mu)=sgn(y-\frac{1}{2})$. We can simplify the expression of $F^{-1}(u)$ and finally obtain:
+
+
+$$F^{-1}(u) = \mu - \alpha .sgn(u-\frac{1}{2})ln(1-2|u-\frac{1}{2}|)$$
 
 ```{r code}
 # Given density function
@@ -87,4 +110,30 @@ geom_line(aes(x = sample, y = sample_density), col = "red") +
 xlab("Sample values") + ylab("Density values")
 
 hist_plot
+```
+
+From this graph, we can see that our sampled numbers follow the distribution.
+
+## Acceptance rejection method using DE(0,1) as a majorizing density for N(0,1).
+
+The main task to solve this exercise is to find the majorizing constant $c$ such that $$c \cdot f_M(x) \geq f_T(x) $$
+
+Where $f_M(x)$ is the majorizing density and $f_T(x)$ is the density we wish to sample from (target density). This inequality must hold true for all x that are on the support of the target function. We must choose $c$ to be large enough for the inequality to hold true, but not so large that the rejection rate for the acceptance/rejection algorithm becomes too great.
+Setting the parameters in both densities to be (1,0) and setting our inequality, we have:
+
+$$c \cdot \frac{1}{2} \exp{-|x|} \geq \frac{1}{\sqrt{2\pi}} \exp{\left( -\frac{x^2}{2}\right)}$$
+We solve for $c$ and obtain:
+
+$$ c \geq \sqrt{\frac{2}{\pi}} \exp{( |x|-x^2/2)}$$
+
+We can find a solution for $c$ for $x>0$ because we have an even function on the right-hand side and the other maximum will be attained at $x = -x_{positive}$ with the same value for $c$. The expression maximizes for $x=1$ and yields:
+
+$$c_{major} = \sqrt{\frac{2e}{\pi}}$$
+
+
+\newpage
+
+# Appendix
+
+```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
 ```
