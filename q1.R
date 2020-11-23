@@ -66,6 +66,14 @@ for (x in x_values) {
 # If we search for x value of majorzing function with same y value as x_max_target we get an x value of ~5. This is our
 # border until we use the Unif distribution and afterwards the power-law but if this is our border this is also
 # our T_min or not? So our initial T_min of 1.5 is not the same as the support border? Something is wrong in our logic.
+
+# Aaaah crap, we can't find the x value that has the same value than max_target because we need to set T_min in order to find our T_min
+# I guess we'll just have to check by just trying out different values of T_min... 
+# THis exercise should not be as complicated as it is. We should arbitrarily decide
+# some value for T_min that is large enough, but not too much. Porbably something nice and round like 3*x with x being the x at which the maximum of the target function is reached.
+
+
+
 support_border = x_max_power_law
 
 vx = c(seq(0, t_min, t_min/10000), seq(t_min, 50, 50/10000))
@@ -81,6 +89,10 @@ rmajorizing<-function(n) {
     res<-NA
     # What should the probabilities be? We need the integral of f(x) between 0 and T_min to get the probability
     # The probability from T_min to Inf is gonna be 1-p then. (Microsoft Teams answer to that question)
+    
+    # exactly, I think that 50/50 is not a bad probability since most of the mass of the target distrib is in the "front" and then everything else comes after
+    
+    
     component<-sample(1:2,1,prob=c(5/10,5/10))
     if(component==1){res<-runif(1)}
     # Here I want to sample from our power-law function as described in number 2.

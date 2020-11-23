@@ -31,16 +31,23 @@ legend("topright", inset=.02, title="functions",
 
 The power-law distribution should not be used by itself because for small values of $x$ $f_p(x) = \infty$. If we sample from our majorizing distribution in this area, we will get a huge number of rejections. It might be better to combine the power-law distribution with another distribution that majorizes our target function in that area. We could use a uniform distribution with support $(0, T_{min}$ in addition to our given distribution with support $(T_{min}, \infty)$.
 
-Power-law distribution values:
+In order to find a good value for $T_{min}$, we should try to understand how the target function behaves. We try to identify the location of the maximum and relate this value to $c$.
 
 $$\frac{df(x)}{dx} = \frac{ce^{(-c^2)/2x} (c^2-3x)}{2\sqrt(2\pi) x^{7/2}}$$
 
 This has one root for $c \neq 0, x = \frac{c^2}{3}$.
 
 $$max(f(x)) = f(\frac{c^2}{3})$$
-$$f_{p}(x) = f(\frac{c^2}{3})$$
+We will set $T_{min}$ to be the value of $x$ for which $f_p(x)$ is the following:
 
-$$x = T_{min}$$
+$$f_{p}(x_{cutoff}) = f(\frac{c^2}{3})$$
+with $x_{cutoff} = t_{min}$ from here on out.
+
+We must now set a value for $\alpha$. With no additional information, other than $\alpha > 1$, we must choose an appropriate alpha for which the majorizing function is greater than our target function for every x on the support $(T_{min}, \infty)$. We choose alpha as small as possible in order to reduce rejections in the acceptance-rejection algorithm. The chosen value of $\alpha$ after visual inspection is 1.3.
+
+
+
+
 
 \newpage
 
