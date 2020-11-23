@@ -1,3 +1,6 @@
+library(poweRlaw)
+library(ggplot2)
+
 #########
 ### 1 ###
 #########
@@ -17,19 +20,19 @@ legend("topright", inset=.02, title="functions",
 ### 2 ###
 #########
 
-target_fun <- function(x, c) {
+target_fun = function(x, c) {
   res = 0
   res = ((c * (sqrt(2 * pi)^(-1)) * exp((-c^(2)) / (2 * x)) * x^(-3/2)))
   res[x<0] = 0
   return (res)
 }
 
-power_law <- function(x, alpha, t_min) {
+power_law = function(x, alpha, t_min) {
   return(((alpha - 1) / t_min) * (x / t_min)^(-alpha))
 }
 
 
-majorizing_fun <- function(x, alpha, t_min) {
+majorizing_fun = function(x, alpha, t_min) {
   sapply(x, function(y) {
     res = NA
     if (y<0) {
@@ -58,39 +61,39 @@ plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="T
 points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="pink")
 
 
-rmajorizing<-function(n) {
-  sapply(1:n,function(i) {
-    res<-NA
-    component<-sample(1:2,1,prob=c(2/3,1/3))
-    if(component==1){res<-x_max_target*runif(1)}
-    if(component==2){res<-rplcon(1, t_min, alpha)}
-    return(res)
-  })
-}
-
 #########
 ### 3 ###
 #########
 
-Nsample<-100000
-my_vec = c()
-for (i in 1:Nsample) {
-  res<-NA
-  component<-sample(1:2,1,prob=c(2/3,1/3))
-  if(component==1){res<-runif(1)}
-  if(component==2){res<-rplcon(1, t_min, alpha)}
-  my_vec = c(my_vec, res)
+Nsample=10000
+
+rmajorizing=function(n){
+  sapply(1:n,function(i){
+    res=NA
+    component=sample(1:2,1,prob=c(2/3,1/3))
+    if(component==1) {
+      res=runif(1, 0, t_min)
+    }
+    if(component==2){
+      res=rplcon(1, t_min, alpha)
+    }
+    res
+  })
 }
 
 
-fgentruncnormal<-function(majorizing_constant){
-  x<-NA
-  num_reject<-0
+fgentruncnormal=function(majorizing_constant){
+  x=NA
+  num_reject=0
   while (is.na(x)){
-    y<-rmajorizing(1)
-    u<-runif(1)
-    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))){x<-y}
-    else{num_reject<-num_reject+1}
+    y=rmajorizing(1)
+    u=runif(1)
+    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))){
+      x=y
+    }
+    else{
+      num_reject=num_reject+1
+    }
   }
   c(x,num_reject)
 }
@@ -98,7 +101,19 @@ fgentruncnormal<-function(majorizing_constant){
 
 
 vtruncnormal_acceptreject = sapply(rep(x_max_target,Nsample),fgentruncnormal)[1,]
+vtruncnormal_acceptreject = vtruncnormal_acceptreject[vtruncnormal_acceptreject <= 30]
 vtruncnormal_direct = rnorm(2*Nsample)
 vtruncnormal_direct = vtruncnormal_direct[vtruncnormal_direct>=0]
 
 hist(vtruncnormal_acceptreject, col="green", breaks=100, xlab="", ylab="sample density", freq=FALSE, main="")
+
+vtruncnormal_acceptreject_mean = mean(vtruncnormal_acceptreject)
+vtruncnormal_acceptreject_var = var(vtruncnormal_acceptreject)
+
+cat("Mean: ", vtruncnormal_acceptreject_mean)
+cat("\nVar: " , vtruncnormal_acceptreject_var)
+
+num_rejections = sum(sapply(rep(x_max_target,Nsample),fgentruncnormal)[2,])
+rejection_rate = num_rejections/Nsample
+cat("\nRejection rate: ", rejection_rate)
+

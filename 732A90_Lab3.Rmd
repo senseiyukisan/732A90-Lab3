@@ -89,59 +89,58 @@ vx = c(seq(0, t_min, t_min/10000), seq(t_min, 30, 30/10000))
 plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
 points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="pink")
 
-# Implementation acceptance-rejection algorithm
-rmajorizing=function(n) {
-  sapply(1:n,function(i) {
+rmajorizing=function(n){
+  sapply(1:n,function(i){
     res=NA
     component=sample(1:2,1,prob=c(2/3,1/3))
-    if(component==1){res=x_max_target*runif(1)}
-    if(component==2){res=rplcon(1, t_min, alpha)}
-    return(res)
+    if(component==1) {
+      res=runif(1, 0, t_min)
+    }
+    if(component==2){
+      res=rplcon(1, t_min, alpha)
+    }
+    res
   })
 }
+
 ```
 
 
 ## 3.
 
-```{r sampling}
+```{r sampling, echo=FALSE}
 Nsample=100000
-my_vec = c()
-for (i in 1:Nsample) {
-  res=NA
-  component=sample(1:2,1,prob=c(2/3,1/3))
-  if(component==1){
-    res=runif(1)
-  }
-  if(component==2){
-    res=rplcon(1, t_min, alpha)
-  }
-  my_vec = c(my_vec, res)
-}
-
 
 fgentruncnormal=function(majorizing_constant){
   x=NA
   num_reject=0
-  while (is.na(x)) {
+  while (is.na(x)){
     y=rmajorizing(1)
     u=runif(1)
-    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))) {
-      x=y
-    }
-    else {
-      num_reject=num_reject+1
-    }
+    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))){x=y}
+    else{num_reject=num_reject+1}
   }
   c(x,num_reject)
 }
 
 
+
 vtruncnormal_acceptreject = sapply(rep(x_max_target,Nsample),fgentruncnormal)[1,]
+vtruncnormal_acceptreject = vtruncnormal_acceptreject[vtruncnormal_acceptreject <= 30]
 vtruncnormal_direct = rnorm(2*Nsample)
 vtruncnormal_direct = vtruncnormal_direct[vtruncnormal_direct>=0]
 
 hist(vtruncnormal_acceptreject, col="green", breaks=100, xlab="", ylab="sample density", freq=FALSE, main="")
+
+vtruncnormal_acceptreject_mean = mean(vtruncnormal_acceptreject)
+vtruncnormal_acceptreject_var = var(vtruncnormal_acceptreject)
+
+cat("Mean: ", vtruncnormal_acceptreject_mean)
+cat("\nVar: " , vtruncnormal_acceptreject_var)
+
+num_rejections = sum(sapply(rep(x_max_target,Nsample),fgentruncnormal)[2,])
+rejection_rate = num_rejections/Nsample
+cat("\nRejection rate: ", rejection_rate)
 ```
 
 \newpage
