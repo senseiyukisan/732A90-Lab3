@@ -8,6 +8,7 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
+library(poweRlaw)
 ```
 
 # Question 1: Stable Distribution 
@@ -45,9 +46,103 @@ with $x_{cutoff} = t_{min}$ from here on out.
 
 We must now set a value for $\alpha$. With no additional information, other than $\alpha > 1$, we must choose an appropriate alpha for which the majorizing function is greater than our target function for every x on the support $(T_{min}, \infty)$. We choose alpha as small as possible in order to reduce rejections in the acceptance-rejection algorithm. The chosen value of $\alpha$ after visual inspection is 1.3.
 
+## 2.
+
+```{r acceptance-rejection-algo, echo=FALSE}
+target_fun = function(x, c) {
+  res = 0
+  res = ((c * (sqrt(2 * pi)^(-1)) * exp((-c^(2)) / (2 * x)) * x^(-3/2)))
+  res[x<0] = 0
+  return (res)
+}
+
+power_law = function(x, alpha, t_min) {
+  return(((alpha - 1) / t_min) * (x / t_min)^(-alpha))
+}
 
 
+majorizing_fun = function(x, alpha, t_min) {
+  sapply(x, function(y) {
+    res = NA
+    if (y<0) {
+      res = 0
+    }
+    if ((y>=0) && (y<=t_min)) {
+      res = x_max_target
+    }
+    if (y>t_min) {
+      res = power_law(y, alpha, t_min)
+    }	
+    res
+  }, simplify = TRUE)
+}
 
+alpha = 2
+c = 2
+t_min = 8.6
+
+# Find out maximum value max(f(x)) for given parameters
+x_max_target = c * (sqrt(2 * pi)^(-1)) * exp(-c^(2) / (2 * (c^2/3))) * (c^2/3)^(-3/2)
+
+# Plot both the target function and the combined majorizing function
+vx = c(seq(0, t_min, t_min/10000), seq(t_min, 30, 30/10000))
+plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
+points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="pink")
+
+# Implementation acceptance-rejection algorithm
+rmajorizing=function(n) {
+  sapply(1:n,function(i) {
+    res=NA
+    component=sample(1:2,1,prob=c(2/3,1/3))
+    if(component==1){res=x_max_target*runif(1)}
+    if(component==2){res=rplcon(1, t_min, alpha)}
+    return(res)
+  })
+}
+```
+
+
+## 3.
+
+```{r sampling}
+Nsample=100000
+my_vec = c()
+for (i in 1:Nsample) {
+  res=NA
+  component=sample(1:2,1,prob=c(2/3,1/3))
+  if(component==1){
+    res=runif(1)
+  }
+  if(component==2){
+    res=rplcon(1, t_min, alpha)
+  }
+  my_vec = c(my_vec, res)
+}
+
+
+fgentruncnormal=function(majorizing_constant){
+  x=NA
+  num_reject=0
+  while (is.na(x)) {
+    y=rmajorizing(1)
+    u=runif(1)
+    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))) {
+      x=y
+    }
+    else {
+      num_reject=num_reject+1
+    }
+  }
+  c(x,num_reject)
+}
+
+
+vtruncnormal_acceptreject = sapply(rep(x_max_target,Nsample),fgentruncnormal)[1,]
+vtruncnormal_direct = rnorm(2*Nsample)
+vtruncnormal_direct = vtruncnormal_direct[vtruncnormal_direct>=0]
+
+hist(vtruncnormal_acceptreject, col="green", breaks=100, xlab="", ylab="sample density", freq=FALSE, main="")
+```
 
 \newpage
 
@@ -91,7 +186,7 @@ $$F^{-1}(u) = \mu - \alpha .sgn(u-\frac{1}{2})ln(1-2|u-\frac{1}{2}|)$$
 
 ```{r code}
 # Given density function
-laplace_density <- function(x, mu, alpha) {
+laplace_density = function(x, mu, alpha) {
   result = (alpha/2)*exp(-alpha*abs(x-mu))
   return(result)
 }
@@ -109,9 +204,9 @@ sample = laplace_inv_cdf(unif_sample, 10, 1)
 sample_density = laplace_density(sample, 10, 1)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 # Plotting the histogram
-hist_plot <- ggplot() +
+hist_plot = ggplot() +
 geom_histogram(aes(x = sample, y = ..density..), col = "green", fill="green") +
 geom_line(aes(x = sample, y = sample_density), col = "red") +
 xlab("Sample values") + ylab("Density values")
@@ -138,22 +233,22 @@ We can find a solution for $c$ for $x>0$ because we have an even function on the
 $$c_{major} = \sqrt{\frac{2e}{\pi}}$$
 ```{r}
 set.seed(12345)
-c_major <- sqrt( (2*exp(1)) / pi )
+c_major = sqrt( (2*exp(1)) / pi )
 
 
-accept_reject <- function(n){
-  results <- rep(0,times = n)
-  counter <- 0
+accept_reject = function(n){
+  results = rep(0,times = n)
+  counter = 0
   
   for(i in 1:n){
-    reject <- TRUE
+    reject = TRUE
     while(reject == TRUE){
-      counter <- counter + 1
-      random_major <- laplace_inv_cdf(runif(1), 0, 1)
-      random_uniform <- runif(1)
+      counter = counter + 1
+      random_major = laplace_inv_cdf(runif(1), 0, 1)
+      random_uniform = runif(1)
       if(random_uniform <= dnorm(random_major)/(c_major*laplace_density(random_major, 0, 1))){
-        results[i] <- random_major
-        reject <- FALSE
+        results[i] = random_major
+        reject = FALSE
       }
     }
   }
@@ -162,43 +257,40 @@ accept_reject <- function(n){
 
 ```
 
-```{r}
+```{r, message=FALSE}
 n = 2000
 unif_sample = rnorm(n)
 sample = accept_reject(n)
 
 
 # Plotting the histogram
-p1 <- ggplot() +
+p1 = ggplot() +
 geom_histogram(aes(x = sample$rn, y = ..density..), col = "green", fill="green") +
 geom_line(aes(x = sample$rn, y = dnorm(sample$rn)), col = "red") +
 xlab("Sample values") + ylab("Density values")
 
 p1
 
-# historgram using rnorm
-p2 <- ggplot() +
+# Histogram using rnorm
+p2 = ggplot() +
   geom_histogram(aes(x= unif_sample, y= ..density..), col = "red", fill = "orange")
 
 p2
-
-
-
 ```
 
 Both historgrams have a similar shape.We now compute the rejection rate and the expected rejection rate.
 
 ```{r}
-reject_rate <- 2000/sample$draws
-expected_rejection <- 1/c_major
-difference <- abs(reject_rate-expected_rejection)
-relative <- reject_rate/expected_rejection
+reject_rate = 2000/sample$draws
+expected_rejection = 1/c_major
+difference = abs(reject_rate-expected_rejection)
+relative = reject_rate/expected_rejection
 
-cat("The rejection rate is: ", round(reject_rate, 4)," . The expected rejection rate is: ", round(expected_rejection, 4), " \ The difference in rejection rate is: ",difference)
+cat("The rejection rate is: ", round(reject_rate, 4),"\nThe expected rejection rate is: ", round(expected_rejection, 4), "\nThe difference in rejection rate is: ",difference)
 
 ```
 
-The rejection rates is very similar to the expected rejection rate. They differ by just 0.4\%
+The rejection rate is very similar to the expected rejection rate. They differ by just 0.003476798.
 
 \newpage
 
