@@ -1,6 +1,6 @@
 ---
 title: "Computer Lab 3"
-author: "Tim Yuki Washio"
+author: "Tim Yuki Washio & Nicolas Taba"
 date: "11/19/2020"
 output: pdf_document
 ---
@@ -15,22 +15,22 @@ library(poweRlaw)
 
 ## 1.
 
-Plotting $f(x)$ with $c=2$ and $f_p(x)$ with $\alpha=2$ and $T_{min}=2$
+Plotting $f(x)$ with $c=1.5$ and $f_p(x)$ with $\alpha=1.5$ and $T_{min}=1$. The value of c was chosen heuristically to illustrate the following argument.
 
 ```{r plot}
-c = 2
-t_min = 1.5
-alpha = 1.1
+c = 1.5
+t_min = 1
+alpha = 1.5
 
-plot(1, xlim = c(0,75), ylim = c(0, 1), type = "n", xlab = "", ylab = "", main = "f(x) ~ f_p(x)")
-curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=75, add=TRUE, col="black")
-curve((eval(alpha) - 1 / eval(t_min)) * (x / eval(t_min))^(-eval(alpha)), from=0, to=75, add=TRUE, col="red")
+plot(1, xlim = c(0,10), ylim = c(0, 0.5), type = "n", xlab = "", ylab = "", main = "f(x) ~ f_p(x)")
+curve(eval(c) * (sqrt(2 * pi)^(-1)) * exp(-eval(c)^(2) / (2 * x)) * x^(-3/2), from=0, to=10, add=TRUE, col="black")
+curve(ifelse(x > t_min, (eval(alpha) - 1 / eval(t_min)) * (x / eval(t_min))^(-eval(alpha)), 0), from=t_min, to=10, add=TRUE, col="red")
 
 legend("topright", inset=.02, title="functions",
        c("target","majorizing"), horiz=TRUE, cex=0.8, col = 1:2, lty = 1)
 ```
 
-The power-law distribution should not be used by itself because for small values of $x$ $f_p(x) = \infty$. If we sample from our majorizing distribution in this area, we will get a huge number of rejections. It might be better to combine the power-law distribution with another distribution that majorizes our target function in that area. We could use a uniform distribution with support $(0, T_{min}$ in addition to our given distribution with support $(T_{min}, \infty)$.
+The power-law distribution should not be used by itself because the two function do not have the same support. It might be better to combine the power-law distribution with another distribution that majorizes our target function in that area. We could use a uniform distribution with support $(0, T_{min}$ in addition to our given distribution with support $(T_{min}, \infty)$.
 
 In order to find a good value for $T_{min}$, we should try to understand how the target function behaves. We try to identify the location of the maximum and relate this value to $c$.
 
@@ -68,7 +68,7 @@ majorizing_fun = function(x, alpha, t_min) {
       res = 0
     }
     if ((y>=0) && (y<=t_min)) {
-      res = x_max_target
+      res = power_law(t_min, alpha, t_min)
     }
     if (y>t_min) {
       res = power_law(y, alpha, t_min)
@@ -77,71 +77,85 @@ majorizing_fun = function(x, alpha, t_min) {
   }, simplify = TRUE)
 }
 
-alpha = 2
-c = 2
-t_min = 8.6
+alpha = 1.3
+c = 1.5
+t_min = 1
 
 # Find out maximum value max(f(x)) for given parameters
 x_max_target = c * (sqrt(2 * pi)^(-1)) * exp(-c^(2) / (2 * (c^2/3))) * (c^2/3)^(-3/2)
 
 # Plot both the target function and the combined majorizing function
 vx = c(seq(0, t_min, t_min/10000), seq(t_min, 30, 30/10000))
-plot(vx, (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
-points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.2, col="pink")
-
-rmajorizing=function(n){
-  sapply(1:n,function(i){
-    res=NA
-    component=sample(1:2,1,prob=c(2/3,1/3))
-    if(component==1) {
-      res=runif(1, 0, t_min)
-    }
-    if(component==2){
-      res=rplcon(1, t_min, alpha)
-    }
-    res
-  })
-}
-
+plot(vx, ylim=c(0, 0.5), (target_fun(vx, c)), pch=19, cex=0.4, xlab="x", ylab="density", main="Truncated normal and majorizing densities")
+points(vx, (majorizing_fun(vx, alpha, t_min)), pch=19, cex=0.4, col="pink")
 ```
 
 
 ## 3.
 
-```{r sampling, echo=FALSE}
-Nsample=100000
+```{r sampling, echo=FALSE, out.width="50%"}
+Nsample=10000
 
-fgentruncnormal=function(majorizing_constant){
-  x=NA
-  num_reject=0
-  while (is.na(x)){
-    y=rmajorizing(1)
-    u=runif(1)
-    if (u<=target_fun(y, 2)/(majorizing_constant*majorizing_fun(y, 2, 8.6))){x=y}
-    else{num_reject=num_reject+1}
-  }
-  c(x,num_reject)
+rmajorizing=function(n){
+  sapply(1:n,function(i){
+    res=rplcon(1, t_min, alpha)
+    return(res)
+  })
 }
 
 
+fgentruncnormal=function(c_target){
+  x=NA
+  major_c_uniform = c_target^(-2) * 1 / sqrt(2 * pi) * 3^(3/2) * exp(-3/2)
+  major_c_pow_law = 2 * c_target / sqrt(2 * pi)
+  prob = integrate(target_fun, 0, t_min, c_target)$value
+  num_reject=0
+  num_tries=0
+  while (is.na(x)){
+    num_tries = num_tries + 1
+    u=runif(1)
+    if (u > prob) {
+      y=rmajorizing(1)
+      if (u<=target_fun(y, c_target)/(major_c_pow_law*majorizing_fun(y, alpha, t_min))){
+        x=y
+      } else{
+        num_reject=num_reject+1
+      }
+    } else {
+      y=runif(1)
+      if (u<=target_fun(y, c_target)/(major_c_uniform*majorizing_fun(y, alpha, t_min))){
+        x=y
+      } else{
+        num_reject=num_reject+1
+      }
+    }
+  }
+  c(x,num_reject,num_tries)
+}
 
-vtruncnormal_acceptreject = sapply(rep(x_max_target,Nsample),fgentruncnormal)[1,]
-vtruncnormal_acceptreject = vtruncnormal_acceptreject[vtruncnormal_acceptreject <= 30]
-vtruncnormal_direct = rnorm(2*Nsample)
-vtruncnormal_direct = vtruncnormal_direct[vtruncnormal_direct>=0]
-
-hist(vtruncnormal_acceptreject, col="green", breaks=100, xlab="", ylab="sample density", freq=FALSE, main="")
-
-vtruncnormal_acceptreject_mean = mean(vtruncnormal_acceptreject)
-vtruncnormal_acceptreject_var = var(vtruncnormal_acceptreject)
-
-cat("Mean: ", vtruncnormal_acceptreject_mean)
-cat("\nVar: " , vtruncnormal_acceptreject_var)
-
-num_rejections = sum(sapply(rep(x_max_target,Nsample),fgentruncnormal)[2,])
-rejection_rate = num_rejections/Nsample
-cat("\nRejection rate: ", rejection_rate)
+c_vals_target = c(1,5,10)
+for (i in 1:length(c_vals_target)) {
+  vtruncnormal_acceptreject = sapply(rep(c_vals_target[i],Nsample), fgentruncnormal)
+  vtruncnormal_acceptreject_density_vals = vtruncnormal_acceptreject[1,]
+  vtruncnormal_acceptreject_density_vals = vtruncnormal_acceptreject_density_vals[vtruncnormal_acceptreject_density_vals <= 300]
+  
+  hist(vtruncnormal_acceptreject_density_vals, col="green", breaks=100, xlab="", ylab="sample density", freq=FALSE, main="")
+  
+  vtruncnormal_acceptreject_mean = mean(vtruncnormal_acceptreject[1,])
+  vtruncnormal_acceptreject_var = var(vtruncnormal_acceptreject[1,])
+  
+  cat("\nMean: ", vtruncnormal_acceptreject_mean)
+  cat("\nVar: " , vtruncnormal_acceptreject_var)
+  
+  num_rejections = sum(vtruncnormal_acceptreject[2,])
+  num_tries = sum(vtruncnormal_acceptreject[3,])
+  rejection_rate = num_rejections/num_tries
+  cat("\nRejection rate: ", rejection_rate)
+}
 ```
+
+Both mean and variance increase as $c$ increases. The rejection rate is very high for large values of $c$. In the density graph we also observe that with rising $c$ the maximum of the sample density decreases. Therefore we conclude that the larger our $c$ the less we can trust the sampling algorithm as the only values that are not rejected will be very small values (machine precision level). Finally, the high rejection rate proves this.
+
 
 \newpage
 
